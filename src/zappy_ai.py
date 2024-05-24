@@ -4,6 +4,7 @@ import socket
 import argparse
 import sys
 import select
+import random
 
 class Player:
     def __init__(self):
@@ -45,7 +46,7 @@ def count_words_at_index(strings, index):
     if 0 <= index < len(strings):
         # Diviser la chaîne en mots, filtrer les "egg" et retourner le nombre de mots restants
         words = strings[index].split()
-        words = [word for word in words if word != "egg"]
+        words = [word for word in words if word != "egg" and word != "player"]
         return len(words)
     else:
         raise IndexError("Index out of range")
@@ -69,6 +70,18 @@ def going_forward(client_socket, player):
     client_socket.send(data_send.encode())
     player.look = False
     player.view = []
+    player.queue.append(data_send)
+
+def turning_right(client_socket, player):
+    data_send = "Right\n"
+    print(f"Sending : {data_send}", end="")
+    client_socket.send(data_send.encode())
+    player.queue.append(data_send)
+
+def turning_left(client_socket, player):
+    data_send = "Left\n"
+    print(f"Sending : {data_send}", end="")
+    client_socket.send(data_send.encode())
     player.queue.append(data_send)
 
 def looking(client_socket, player):
@@ -109,6 +122,76 @@ def can_evolve(client_socket, player):
                 player.incanting = True
     else :
         return False
+    
+def received_look(player, data_rec):
+    if data_rec.decode() == "ko\n" :
+        player.look = False
+    else :
+        player.view = split_by_commas(data_rec.decode())
+
+def command_received(player, data_rec):
+    if data_rec.decode() == "Elevation underway\n":
+        return
+    if len(player.queue) > 0 :
+        if player.look == True and player.view == [] and player.queue[0] == "Look\n":
+            received_look(player, data_rec)
+        elif player.queue[0] == "Incantation\n":
+            if data_rec.decode() == f"Current level: {player.level + 1}\n" :
+                player.level += 1   
+            else :
+                player.view = []
+                player.look = False
+            player.incanting = False
+        player.queue.pop(0)
+
+def moving_level_one(client_socket, player):
+    if count_words_at_index(player.view, 2) > 0 :
+        going_forward(client_socket, player)
+    elif count_words_at_index(player.view, 1) > 0 :
+        going_forward(client_socket, player)
+        turning_left(client_socket, player)
+        going_forward(client_socket, player)
+    elif count_words_at_index(player.view, 3) > 0 :
+        going_forward(client_socket, player)
+        turning_right(client_socket, player)
+        going_forward(client_socket, player)
+    else :
+        r = random.random()
+        if r > 0.5 :
+            going_forward(client_socket, player)
+        elif r > 0.25 :
+            going_forward(client_socket, player)
+            turning_left(client_socket, player)
+            going_forward(client_socket, player)
+        else :
+            going_forward(client_socket, player)
+            turning_right(client_socket, player)
+            going_forward(client_socket, player)
+
+def moving_player(client_socket, player):
+    if player.level == 1 :
+        moving_level_one(client_socket, player)
+    if player.level == 2 :
+        moving_level_one(client_socket, player)
+
+def command_send(client_socket, player):
+    if player.look == False : # actions
+        if len(player.queue) > 0 :
+            return
+        looking(client_socket, player)
+    
+    if can_evolve(client_socket, player) or player.incanting :
+        return
+    if player.look == True and player.view != [] :
+        if count_words_at_index(player.view, 0) > 0 and 0 in find_keyword_in_list(player.view, "food") :
+            #take food
+            send_and_remove(client_socket, player, 0, "food")
+        elif count_words_at_index(player.view, 0) > 0 :
+            stone = check_stones(player, 0)
+            if stone != None :
+                send_and_remove(client_socket, player, 0, stone)
+        else :
+            moving_player(client_socket, player)
 
 def netcat_client(host, port, name):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -132,34 +215,9 @@ def netcat_client(host, port, name):
                 
                 if data_rec.decode() == "dead\n": # receptions
                     break
-                if data_rec.decode() == "Elevation underway\n":
-                    continue
-                if player.look == True and player.view == [] :
-                    player.view = split_by_commas(data_rec.decode())
-                if len(player.queue) > 0 :
-                    if data_rec.decode() == f"Current level: {player.level + 1}\n" and player.queue[0] == "Incantation\n":
-                        player.incanting = False
-                        player.level += 1
-                    player.queue.pop(0)
-
-            if player.look == False : # actions
-                if len(player.queue) > 0 :
-                    continue
-                looking(client_socket, player)
-            
-            if can_evolve(client_socket, player) or player.incanting :
-                continue
-
-            if player.look == True and player.view != [] :
-                if count_words_at_index(player.view, 0) > 1 and 0 in find_keyword_in_list(player.view, "food") :
-                    #take food
-                    send_and_remove(client_socket, player, 0, "food")
-                elif count_words_at_index(player.view, 0) > 1 :
-                    stone = check_stones(player, 0)
-                    if stone != None :
-                        send_and_remove(client_socket, player, 0, stone)
-                else :
-                    going_forward(client_socket, player)
+                
+                command_received(player, data_rec)
+            command_send(client_socket, player)
 
     except KeyboardInterrupt:
         print("Closing...")
