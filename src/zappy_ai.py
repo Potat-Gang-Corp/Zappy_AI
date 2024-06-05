@@ -176,6 +176,18 @@ def check_stones(player, index):
     if 0 <= index < len(player.view):
         items = player.view[index].split()
         for item in items:
+            # if item == "linemate":
+            #     print(f"I have {player.linemate} linemates.")
+            # elif item == "deraumere":
+            #     print(f"I have {player.deraumere} deraumeres.")
+            # elif item == "sibur":
+            #     print(f"I have {player.sibur} siburs.")
+            # elif item == "mendiane":
+            #     print(f"I have {player.mendiane} mendianes.")
+            # elif item == "phiras":
+            #     print(f"I have {player.phiras} phiras.")
+            # elif item == "thystame":
+            #     print(f"I have {player.thystame} thystame.")
             if item == "linemate" and player.linemate < player.max_linemate:
                 return "linemate"
             elif item == "deraumere" and player.deraumere < player.max_deraumere:
@@ -235,6 +247,12 @@ def command_received(player, data_rec):
     if data_rec.decode() == "Elevation underway\n":
         return
     if len(player.queue) > 0 :
+        if "Take" in player.queue[0]:
+            item = player.queue[0].split()[1]  # Get the word after "Taking"
+            if hasattr(player, item):
+                setattr(player, item, getattr(player, item) + 1)
+            player.queue.pop(0)
+            return
         if player.look == True and player.view == [] and player.queue[0] == "Look\n":
             received_look(player, data_rec)
         elif player.queue[0] == "Incantation\n":
@@ -306,6 +324,8 @@ def command_send(client_socket, player):
             stone = check_stones(player, 0)
             if stone != None :
                 send_and_remove(client_socket, player, 0, stone)
+            else :
+                moving_player(client_socket, player)
         else :
             moving_player(client_socket, player)
 
