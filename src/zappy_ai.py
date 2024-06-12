@@ -41,6 +41,7 @@ class Player:
         self.incanting = False
         self.wants_incanting = False #
         self.need_to_go = None #
+        self.nb_r = 0 #
         self.view = []
         self.look = False
         self.queue = []
@@ -178,18 +179,6 @@ def check_stones(player, index):
     if 0 <= index < len(player.view):
         items = player.view[index].split()
         for item in items:
-            # if item == "linemate":
-            #     print(f"I have {player.linemate} linemates.")
-            # elif item == "deraumere":
-            #     print(f"I have {player.deraumere} deraumeres.")
-            # elif item == "sibur":
-            #     print(f"I have {player.sibur} siburs.")
-            # elif item == "mendiane":
-            #     print(f"I have {player.mendiane} mendianes.")
-            # elif item == "phiras":
-            #     print(f"I have {player.phiras} phiras.")
-            # elif item == "thystame":
-            #     print(f"I have {player.thystame} thystame.")
             if item == "linemate" and player.linemate < player.max_linemate:
                 return "linemate"
             elif item == "deraumere" and player.deraumere < player.max_deraumere:
@@ -212,16 +201,19 @@ def check_level_two(player, client_socket) :
     if (not 0 in find_keyword_in_list(player.view, "sibur")) and player.sibur == 0 :
         return False
     if (not 0 in find_keyword_in_list(player.view, "sibur")) :
+        player.sibur -= 1
         data_send = "Set sibur\n"
         print(f"Sending : {data_send}", end="")
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
     if (not 0 in find_keyword_in_list(player.view, "deraumere")) :
+        player.deraumere -= 1
         data_send = "Set deraumere\n"
         print(f"Sending : {data_send}", end="")
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
     if (not 0 in find_keyword_in_list(player.view, "linemate")) :
+        player.linemate -= 1
         data_send = "Set linemate\n"
         print(f"Sending : {data_send}", end="")
         client_socket.send(data_send.encode())
@@ -235,7 +227,7 @@ def can_evolve(client_socket, player):
     @param player Player class containing queue and incanting.
     @return True if the player can evolve, else false.
     """
-    if player.incanting == True or player.need_to_go != 0:
+    if player.incanting == True or player.need_to_go != None:
         return False
     if player.view != [] :
         if player.level == 1:
@@ -250,13 +242,14 @@ def can_evolve(client_socket, player):
                 return False
         elif player.level == 2 :
             if player.wants_incanting == True :
+                if player.nb_r >= 2 :
+                    
+                    #evolve
+                    return True
                 return True
             if check_level_two(player, client_socket) :
-                data_send = "Broadcast \"Level 2\"\n"
-                print(f"Sending : {data_send}", end="")
-                client_socket.send(data_send.encode())
-                player.queue.append(data_send)
                 player.wants_incanting = True
+                player.nb_r = 1
                 return True
             else :
                 return False
@@ -282,16 +275,34 @@ def command_received(player, data_rec):
     @param player Player class containing queue.
     @param data_rec String containing ko or a potential instruction.
     """
+    print(f"Received: {data_rec.decode()}", end="")
     if data_rec.decode() == "Elevation underway\n":
         return
+
     if "message" in data_rec.decode() :
-        mess = data_rec.decode().replace('"', '').replace(',', '')
-        if mess.split()[3] == player.level :
-            player.need_to_go = mess.split()[1]
-            print(f"{player.need_to_go}") # check
+        words = data_rec.decode().replace('"', '').replace(',', '').split()
+        # if player.wants_incanting == True :
+        #     return
+        if len(words) > 3 and words[0] == "message" and words[2] == "Level" :
+            player_num = words[1]
+            player_level = words[3]
+            if int(player_level) == int(player.level):
+                if words[4] == "c" :
+                    player.nb_r += 1
+                    if incant_nb(player) and (player.need_to_go != 0 and player.wants_incanting == False) :
+                        player.need_to_go = None 
+                        player.nb_r = 0
+                        return
+                elif words[4] == "r" :
+                    player.need_to_go = int(player_num)
+                if player.nb_r == 0 :
+                    player.nb_r = 1
+                # print(player.need_to_go)
         return
+
     if len(player.queue) > 0 :
         if "Broadcast" in player.queue[0] :
+            player.queue.pop(0)
             return
         if "Take" in player.queue[0]:
             item = player.queue[0].split()[1]
@@ -306,11 +317,22 @@ def command_received(player, data_rec):
                 player.level += 1   
                 player.view = []
                 player.look = False
+                player.nb_r = 0
+                player.wants_incanting = False
+                # reduce maxs
             else :
                 player.view = []
                 player.look = False
             player.incanting = False
         player.queue.pop(0)
+    elif player.incanting == True and data_rec.decode() == f"Current level: {player.level + 1}\n" :
+        player.level += 1   
+        player.view = []
+        player.look = False
+        player.nb_r = 0
+        player.wants_incanting = False
+        player.incanting = False
+        player.need_to_go = None
 
 def moving_level_one(client_socket, player):
     """
@@ -394,16 +416,78 @@ def moving_level_two(client_socket, player):
             turning_right(client_socket, player)
             going_forward(client_socket, player)
 
+def go_to_need(client_socket, player):
+    if player.need_to_go == 0 :
+        data_send = f"Broadcast \"Level {player.level} c\"\n"
+        player.nb_r += 1
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        return
+    elif player.need_to_go == 1 :
+        going_forward(client_socket, player)
+    elif player.need_to_go == 2 :
+        going_forward(client_socket, player)
+        turning_left(client_socket, player)
+        going_forward(client_socket, player)
+    elif player.need_to_go == 3 :
+        turning_left(client_socket, player)
+        going_forward(client_socket, player)
+    elif player.need_to_go == 4 :
+        turning_left(client_socket, player)
+        going_forward(client_socket, player)
+        turning_left(client_socket, player)
+        going_forward(client_socket, player)
+    elif player.need_to_go == 5 :
+        turning_left(client_socket, player)
+        turning_left(client_socket, player)
+        going_forward(client_socket, player)
+    elif player.need_to_go == 6 :
+        turning_right(client_socket, player)
+        going_forward(client_socket, player)
+        turning_right(client_socket, player)
+        going_forward(client_socket, player)
+    elif player.need_to_go == 7 :
+        turning_right(client_socket, player)
+        going_forward(client_socket, player)
+    elif player.need_to_go == 8 :
+        going_forward(client_socket, player)
+        turning_right(client_socket, player)
+        going_forward(client_socket, player)
+
 def moving_player(client_socket, player):
     """
     @brief Checks the player level to know what move to do.
     @param client_socket Socket where to potentially send information.
     @param player Player class.
     """
+    if player.need_to_go != None :
+        if incant_nb(player) :
+            # data_send = "Incantation\n"
+            # print(f"Sending : {data_send}", end="")
+            # client_socket.send(data_send.encode())
+            # player.queue.append(data_send)
+            player.incanting = True
+            player.nb_r = 0
+            player.need_to_go = None
+            return
+        go_to_need(client_socket, player)
+        return
     if player.level == 1 :
         moving_level_one(client_socket, player)
     if player.level == 2 :
         moving_level_two(client_socket, player)
+    if player.level == 3 :
+        moving_level_two(client_socket, player)
+
+def incant_nb(player):
+    if (player.level == 2 or player.level == 3) and player.nb_r >= 2 :
+        return True
+    if (player.level == 4 or player.level == 5) and player.nb_r >= 4 :
+        return True
+    if (player.level == 6 or player.level == 7) and player.nb_r >= 6 :
+        return True
+    return False
 
 def command_send(client_socket, player):
     """
@@ -411,6 +495,23 @@ def command_send(client_socket, player):
     @param client_socket Socket where to potentially send information.
     @param player Player class.
     """
+    if player.wants_incanting == True :
+        if len(player.queue) >= 1 :
+            return
+        else :
+            if incant_nb(player) :
+                data_send = "Incantation\n"
+                print(f"Sending : {data_send}", end="")
+                client_socket.send(data_send.encode())
+                player.queue.append(data_send)
+                player.incanting = True
+                player.nb_r = 0
+                player.wants_incanting = False
+                return #evolve
+            data_send = f"Broadcast \"Level {player.level} r\"\n"
+            print(f"Sending : {data_send}", end="")
+            client_socket.send(data_send.encode())
+            player.queue.append(data_send)
     if player.look == False : 
         if len(player.queue) > 0 :
             return
@@ -419,11 +520,12 @@ def command_send(client_socket, player):
     if can_evolve(client_socket, player) or player.incanting or player.wants_incanting :
         return
     if player.look == True and player.view != [] :
+
         if count_words_at_index(player.view, 0) > 0 and 0 in find_keyword_in_list(player.view, "food") :
             send_and_remove(client_socket, player, 0, "food")
         elif count_words_at_index(player.view, 0) > 0 :
             stone = check_stones(player, 0)
-            if stone != None :
+            if stone != None and not 0 in find_keyword_in_list(player.view, "player player") :
                 send_and_remove(client_socket, player, 0, stone)
             else :
                 moving_player(client_socket, player)
@@ -454,12 +556,14 @@ def netcat_client(host, port, name):
             
             if client_socket in ready_to_read:
                 data_rec = client_socket.recv(1024)
-                print(f"Received: {data_rec.decode()}", end="")
+                # print(f"Received: {data_rec.decode()}", end="")
                 
                 if data_rec.decode() == "dead\n": # receptions
                     break
-                
-                command_received(player, data_rec)
+                commands = data_rec.decode().splitlines(keepends=True)
+                for command in commands:
+                    command_received(player, command.encode())
+            # print(f"N : {player.need_to_go}")
             command_send(client_socket, player)
 
     except KeyboardInterrupt:
