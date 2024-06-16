@@ -57,6 +57,8 @@ class Player:
         self.max_mendiane = 5
         self.max_phiras = 6
         self.max_thystame = 1
+        self.food = 10 #
+        self.starve = None
 
 def split_by_commas(input_string):
     """
@@ -200,6 +202,17 @@ def check_level_two(player, client_socket) :
         return False
     if (not 0 in find_keyword_in_list(player.view, "sibur")) and player.sibur == 0 :
         return False
+    
+    if player.starve == None:
+        data_send = "Inventory\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        return False
+    elif player.starve < 8 :
+        player.starve = None
+        return False
+
     if (not 0 in find_keyword_in_list(player.view, "sibur")) :
         player.sibur -= 1
         data_send = "Set sibur\n"
@@ -231,6 +244,16 @@ def check_level_three(player, client_socket) :
     if (p + player.phiras) < 2:
         return False
     
+    if player.starve == None:
+        data_send = "Inventory\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        return False
+    elif player.starve < 12 :
+        player.starve = None
+        return False
+
     while (l < 2) :
         player.linemate -= 1
         data_send = "Set linemate\n"
@@ -253,6 +276,57 @@ def check_level_three(player, client_socket) :
         p += 1
     return True
 
+def check_level_four(player, client_socket) :
+    l = player.view[0].count("linemate")
+    if (l + player.linemate) < 1:
+        return False
+    d = player.view[0].count("deraumere")
+    if (d + player.deraumere) < 1:
+        return False
+    s = player.view[0].count("sibur")
+    if (s + player.sibur) < 2 :
+        return False
+    p = player.view[0].count("phiras")
+    if (p + player.phiras) < 1:
+        return False
+    if player.starve == None:
+        data_send = "Inventory\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        return False
+    elif player.starve < 15 :
+        player.starve = None
+        return False
+    if (l < 1) :
+        player.linemate -= 1
+        data_send = "Set linemate\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        # l += 1
+    if (d < 1) :
+        player.deraumere -= 1
+        data_send = "Set deraumere\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+    while (s < 2) :
+        player.sibur -= 1
+        data_send = "Set sibur\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        s += 1
+    if (p < 1) :
+        player.phiras -= 1
+        data_send = "Set phiras\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        # p += 1
+    return True
+
 def can_evolve(client_socket, player):
     """
     @brief Checks if the conditions are met to evolve, if so set player.incanting to true and adds the request to evolve to player.queue.
@@ -263,7 +337,9 @@ def can_evolve(client_socket, player):
     if player.incanting == True or player.need_to_go != None:
         return False
     if player.view != [] :
-        if player.level == 1 and player.view[0].count("player") < 2:
+        if player.level == 1:
+            if player.view[0].count("player") >= 2:
+                return False
             if check_stones(player, 0) == "linemate":
                 data_send = "Incantation\n"
                 print(f"Sending : {data_send}", end="")
@@ -273,7 +349,9 @@ def can_evolve(client_socket, player):
                 return True
             else :
                 return False
-        elif player.level == 2 and player.view[0].count("player") < 2 :
+        elif player.level == 2 :
+            if player.view[0].count("player") >= 2:
+                return False
             if player.wants_incanting == True :
                 return True
             if check_level_two(player, client_socket) :
@@ -282,10 +360,23 @@ def can_evolve(client_socket, player):
                 return True
             else :
                 return False
-        elif player.level == 3 and player.view[0].count("player") < 2:
+        elif player.level == 3 :
+            if player.view[0].count("player") >= 2:
+                return False
             if player.wants_incanting == True :
                 return True
             if check_level_three(player, client_socket) :
+                player.wants_incanting = True
+                player.nb_r = 1
+                return True
+            else :
+                return False
+        elif player.level == 4 :
+            if player.view[0].count("player") >= 2:
+                return False
+            if player.wants_incanting == True :
+                return True
+            if check_level_four(player, client_socket) :
                 player.wants_incanting = True
                 player.nb_r = 1
                 return True
@@ -318,6 +409,15 @@ def reduce_max(player):
         player.max_linemate -= 2
         player.max_sibur -= 1
         player.max_phiras -= 2
+
+def inventory(player, data_rec):
+    data = split_by_commas(data_rec)
+    for item in data:
+        if item.startswith("food"):
+            _, quantity = item.split()
+            player.starve = int(quantity)
+            print(f"I have {player.starve} food", file=sys.stderr)
+            return
 
 def command_received(player, data_rec):
     """
@@ -359,9 +459,12 @@ def command_received(player, data_rec):
         if len(player.queue) > 0 :
             if player.queue[0] == "Incantation\n":
                 player.queue.pop(0)
+        print(f"Player got level : {player.level}", file=sys.stderr)
         return
 
     if len(player.queue) > 0 :
+        if "Inventory" in player.queue[0] :
+            inventory(player, data_rec.decode())
         if "Broadcast" in player.queue[0] :
             player.queue.pop(0)
             return
@@ -624,6 +727,7 @@ def netcat_client(host, port, name):
             # print(f"N : {player.need_to_go}")
             command_send(client_socket, player)
 
+        print("Player session ended", file=sys.stderr)
     except KeyboardInterrupt:
         print("Closing...")
     finally:
