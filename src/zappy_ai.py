@@ -109,7 +109,7 @@ def remove_element(strings, index, element):
     if 0 <= index < len(strings):
         strings[index] = strings[index].replace(element, "", 1)
     else:
-        raise IndexError("Index out of range")
+        print("Index out of range (remove_element).")
 
 def send_and_remove(client_socket, player, index, element):
     """
@@ -955,11 +955,18 @@ def netcat_client(host, port, name):
         print(f"Sending : {data_send}", end="")
         client_socket.send(data_send.encode())
         while 1 :
-            if client_socket.recv(1024).decode() == "ko\n":
+            data_rec = client_socket.recv(1024)
+            if data_rec.decode() == "ko\n":
                 time.sleep(0.5)
                 data_send = name + "\n"
                 print(f"Sending : {data_send}", end="")
                 client_socket.send(data_send.encode())
+            elif data_rec.decode() == "This team is full, please wait\n" :
+                client_socket.recv(1024)
+                break
+            elif data_rec.decode() == "Wrong team name, please try again\n" :
+                print("Wrong team name. Closing...")
+                exit(0)
             else:
                 break
 
