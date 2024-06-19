@@ -25,7 +25,6 @@ while [ $count -lt $max_processes ]; do
     sleep 0.5  # Ajout d'une pause pour éviter de lancer trop d'instances en trop peu de temps
 done
 
-# Attendre indéfiniment jusqu'à ce que l'utilisateur appuie sur CTRL+C
-while true; do
-    sleep 1
-done
+wait
+
+echo "All AIs are done"

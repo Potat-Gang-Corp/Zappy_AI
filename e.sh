@@ -13,7 +13,6 @@ cleanup() {
     exit 0
 }
 
-# Configurer le gestionnaire de signal pour intercepter CTRL+C (SIGINT)
 trap cleanup INT
 
 while [ $count -lt $max_processes ]; do
@@ -23,6 +22,6 @@ while [ $count -lt $max_processes ]; do
     sleep 0.5 
 done
 
-while true; do
-    sleep 1
-done
+wait
+
+echo "All AIs are done"

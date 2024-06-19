@@ -10,6 +10,7 @@ import argparse
 import sys
 import select
 import random
+import time
 
 class Player:
     """
@@ -58,7 +59,7 @@ class Player:
         self.max_phiras = 6
         self.max_thystame = 1
         self.food = 10 #
-        self.starve = None
+        self.starve = None #
 
 def split_by_commas(input_string):
     """
@@ -181,6 +182,8 @@ def check_stones(player, index):
     if 0 <= index < len(player.view):
         items = player.view[index].split()
         for item in items:
+            if item == "food":
+                return "food"
             if item == "linemate" and player.linemate < player.max_linemate:
                 return "linemate"
             elif item == "deraumere" and player.deraumere < player.max_deraumere:
@@ -327,6 +330,187 @@ def check_level_four(player, client_socket) :
         # p += 1
     return True
 
+def check_level_five(player, client_socket) :
+    l = player.view[0].count("linemate")
+    if (l + player.linemate) < 1:
+        return False
+    d = player.view[0].count("deraumere")
+    if (d + player.deraumere) < 2:
+        return False
+    s = player.view[0].count("sibur")
+    if (s + player.sibur) < 1 :
+        return False
+    m = player.view[0].count("mendiane")
+    if (m + player.mendiane) < 3:
+        return False
+    
+    if player.starve == None:
+        data_send = "Inventory\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        return False
+    elif player.starve < 20 :
+        player.starve = None
+        return False
+    
+    if (l < 1) :
+        player.linemate -= 1
+        data_send = "Set linemate\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        # l += 1
+    while (d < 2) :
+        player.deraumere -= 1
+        data_send = "Set deraumere\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        d += 1
+    if (s < 1) :
+        player.sibur -= 1
+        data_send = "Set sibur\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        # s += 1
+    while (m < 3) :
+        player.mendiane -= 1
+        data_send = "Set mendiane\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        m += 1
+    return True
+
+def check_level_six(player, client_socket) :
+    l = player.view[0].count("linemate")
+    if (l + player.linemate) < 1:
+        return False
+    d = player.view[0].count("deraumere")
+    if (d + player.deraumere) < 2:
+        return False
+    s = player.view[0].count("sibur")
+    if (s + player.sibur) < 3 :
+        return False
+    p = player.view[0].count("phiras")
+    if (p + player.phiras) < 1:
+        return False
+    
+    if player.starve == None:
+        data_send = "Inventory\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        return False
+    elif player.starve < 25 :
+        player.starve = None
+        return False
+    
+    if (l < 1) :
+        player.linemate -= 1
+        data_send = "Set linemate\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        # l += 1
+    while (d < 2) :
+        player.deraumere -= 1
+        data_send = "Set deraumere\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        d += 1
+    while (s < 3) :
+        player.sibur -= 1
+        data_send = "Set sibur\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        s += 1
+    if (p < 1) :
+        player.phiras -= 1
+        data_send = "Set phiras\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        # p += 1
+    return True
+
+def check_level_seven(player, client_socket) :
+    l = player.view[0].count("linemate")
+    if (l + player.linemate) < 2:
+        return False
+    d = player.view[0].count("deraumere")
+    if (d + player.deraumere) < 2:
+        return False
+    s = player.view[0].count("sibur")
+    if (s + player.sibur) < 2 :
+        return False
+    m = player.view[0].count("mendiane")
+    if (m + player.mendiane) < 2 :
+        return False
+    p = player.view[0].count("phiras")
+    if (p + player.phiras) < 2:
+        return False
+    t = player.view[0].count("thystame")
+    if (t + player.thystame) < 1:
+        return False
+    
+    if player.starve == None:
+        data_send = "Inventory\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        return False
+    elif player.starve < 25 :
+        player.starve = None
+        return False
+    
+    while (l < 1) :
+        player.linemate -= 1
+        data_send = "Set linemate\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        l += 1
+    while (d < 2) :
+        player.deraumere -= 1
+        data_send = "Set deraumere\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        d += 1
+    while (s < 2) :
+        player.sibur -= 1
+        data_send = "Set sibur\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        s += 1
+    while (p < 2) :
+        player.phiras -= 1
+        data_send = "Set phiras\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        p += 1
+    while (m < 2) :
+        player.mendiane -= 1
+        data_send = "Set mendiane\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+        m += 1
+    if (t < 1) :
+        player.thystame -= 1
+        data_send = "Set thystame\n"
+        print(f"Sending : {data_send}", end="")
+        client_socket.send(data_send.encode())
+        player.queue.append(data_send)
+    return True
+
 def can_evolve(client_socket, player):
     """
     @brief Checks if the conditions are met to evolve, if so set player.incanting to true and adds the request to evolve to player.queue.
@@ -340,7 +524,7 @@ def can_evolve(client_socket, player):
         if player.level == 1:
             if player.view[0].count("player") >= 2:
                 return False
-            if check_stones(player, 0) == "linemate":
+            if player.view[0].count("linemate") >= 1:
                 data_send = "Incantation\n"
                 print(f"Sending : {data_send}", end="")
                 client_socket.send(data_send.encode())
@@ -382,6 +566,39 @@ def can_evolve(client_socket, player):
                 return True
             else :
                 return False
+        elif player.level == 5 :
+            if player.view[0].count("player") >= 2:
+                return False
+            if player.wants_incanting == True :
+                return True
+            if check_level_five(player, client_socket) :
+                player.wants_incanting = True
+                player.nb_r = 1
+                return True
+            else :
+                return False
+        elif player.level == 6 :
+            if player.view[0].count("player") >= 2:
+                return False
+            if player.wants_incanting == True :
+                return True
+            if check_level_six(player, client_socket) :
+                player.wants_incanting = True
+                player.nb_r = 1
+                return True
+            else :
+                return False
+        elif player.level == 7 :
+            if player.view[0].count("player") >= 2:
+                return False
+            if player.wants_incanting == True :
+                return True
+            if check_level_seven(player, client_socket) :
+                player.wants_incanting = True
+                player.nb_r = 1
+                return True
+            else :
+                return False
         else :
             return False
     else :
@@ -409,6 +626,28 @@ def reduce_max(player):
         player.max_linemate -= 2
         player.max_sibur -= 1
         player.max_phiras -= 2
+    elif player.level == 5:
+        player.max_linemate -= 1
+        player.max_deraumere -= 1
+        player.max_sibur -= 2
+        player.max_phiras -= 1
+    elif player.level == 6:
+        player.max_linemate -= 1
+        player.max_deraumere -= 2
+        player.max_sibur -= 1
+        player.max_mendiane -= 3
+    elif player.level == 7:
+        player.max_linemate -= 1
+        player.max_deraumere -= 2
+        player.max_sibur -= 3
+        player.max_phiras -= 1
+    elif player.level == 8:
+        player.max_linemate -= 2
+        player.max_deraumere -= 2
+        player.max_sibur -= 2
+        player.max_mendiane -= 2
+        player.max_phiras -= 2
+        player.max_thystame -= 1
 
 def inventory(player, data_rec):
     data = split_by_commas(data_rec)
@@ -426,8 +665,11 @@ def command_received(player, data_rec):
     @param data_rec String containing ko or a potential instruction.
     """
     print(f"Received: {data_rec.decode()}", end="")
+
+    if data_rec.decode() == "dead\n" :
+        return -1
     if data_rec.decode() == "Elevation underway\n":
-        return
+        return 0
 
     if "message" in data_rec.decode() :
         words = data_rec.decode().replace('"', '').replace(',', '').split()
@@ -440,12 +682,12 @@ def command_received(player, data_rec):
                     if incant_nb(player) and (player.need_to_go != 0 and player.wants_incanting == False) :
                         player.need_to_go = None 
                         player.nb_r = 0
-                        return
+                        return 0
                 elif words[4] == "r" :
                     player.need_to_go = int(player_num)
                 if player.nb_r == 0 :
                     player.nb_r = 1
-        return
+        return 0
     
     if data_rec.decode() == f"Current level: {player.level + 1}\n" :
         player.level += 1   
@@ -460,20 +702,20 @@ def command_received(player, data_rec):
             if player.queue[0] == "Incantation\n":
                 player.queue.pop(0)
         print(f"Player got level : {player.level}", file=sys.stderr)
-        return
+        return 0
 
     if len(player.queue) > 0 :
         if "Inventory" in player.queue[0] :
             inventory(player, data_rec.decode())
         if "Broadcast" in player.queue[0] :
             player.queue.pop(0)
-            return
+            return 0
         if "Take" in player.queue[0]:
             item = player.queue[0].split()[1]
             if hasattr(player, item):
                 setattr(player, item, getattr(player, item) + 1)
             player.queue.pop(0)
-            return
+            return 0
         if player.look == True and player.view == [] and player.queue[0] == "Look\n":
             received_look(player, data_rec)
         if player.queue[0] == "Incantation\n" and data_rec.decode() == "ko\n":
@@ -494,7 +736,7 @@ def moving_level(client_socket, player):
     """
     indices = find_keyword_in_list(player.view, "food")
 
-    if count_words_at_index(player.view, 2) > 0 :
+    if count_words_at_index(player.view, 2) > 0 and (check_stones(player, 2) != None or 2 in indices):
         going_forward(client_socket, player)
     elif count_words_at_index(player.view, 6) > 0 and (check_stones(player, 6) != None or 6 in indices) and player.level >= 2 :
         going_forward(client_socket, player)
@@ -503,11 +745,11 @@ def moving_level(client_socket, player):
         going_forward(client_socket, player)
         going_forward(client_socket, player)
         going_forward(client_socket, player)
-    elif count_words_at_index(player.view, 1) > 0 :
+    elif count_words_at_index(player.view, 1) > 0 and (check_stones(player, 1) != None or 1 in indices):
         going_forward(client_socket, player)
         turning_left(client_socket, player)
         going_forward(client_socket, player)
-    elif count_words_at_index(player.view, 3) > 0 :
+    elif count_words_at_index(player.view, 3) > 0 and (check_stones(player, 3) != None or 3 in indices):
         going_forward(client_socket, player)
         turning_right(client_socket, player)
         going_forward(client_socket, player)
@@ -593,6 +835,7 @@ def go_to_need(client_socket, player):
         print(f"Sending : {data_send}", end="")
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
+        player.wants_incanting = True
     elif player.need_to_go == 1 :
         going_forward(client_socket, player)
     elif player.need_to_go == 2 :
@@ -711,6 +954,16 @@ def netcat_client(host, port, name):
         data_send = name + "\n"
         print(f"Sending : {data_send}", end="")
         client_socket.send(data_send.encode())
+        while 1 :
+            if client_socket.recv(1024).decode() == "ko\n":
+                time.sleep(0.5)
+                data_send = name + "\n"
+                print(f"Sending : {data_send}", end="")
+                client_socket.send(data_send.encode())
+            else:
+                break
+
+        d = 0
         while True:
 
             ready_to_read, _, _ = select.select(sockets_to_read, [], [], 0.1)
@@ -719,11 +972,15 @@ def netcat_client(host, port, name):
                 data_rec = client_socket.recv(1024)
                 # print(f"Received: {data_rec.decode()}", end="")
                 
-                if data_rec.decode() == "dead\n": # receptions
-                    break
+                # if data_rec.decode() == "dead\n": # receptions
+                #     break
                 commands = data_rec.decode().splitlines(keepends=True)
                 for command in commands:
-                    command_received(player, command.encode())
+                    d = command_received(player, command.encode())
+                    if d == -1 :
+                        break
+                if d == -1 :
+                    break
             # print(f"N : {player.need_to_go}")
             command_send(client_socket, player)
 
