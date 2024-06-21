@@ -1,7 +1,7 @@
 #!/bin/sh
 
 count=0
-max_processes=10
+max_processes=15
 pids=""
 
 cleanup() {
@@ -16,10 +16,13 @@ cleanup() {
 trap cleanup INT
 
 while [ $count -lt $max_processes ]; do
-    ./zappy_ai -p 8080 -n e > e.txt &
+    ./zappy_ai -p 8080 -n name1 > e.txt &
     pids="$pids $!" 
     count=$((count + 1))
-    sleep 0.5 
+    ./zappy_ai -p 8080 -n name2 > e.txt &
+    pids="$pids $!" 
+    count=$((count + 1))
+    sleep 0.1
 done
 
 wait
