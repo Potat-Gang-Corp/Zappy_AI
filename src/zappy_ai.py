@@ -212,7 +212,7 @@ def check_level_two(player, client_socket) :
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
         return False
-    elif player.starve < 8 :
+    elif player.starve < 16 :
         player.starve = None
         return False
 
@@ -253,7 +253,7 @@ def check_level_three(player, client_socket) :
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
         return False
-    elif player.starve < 12 :
+    elif player.starve < 18 :
         player.starve = None
         return False
 
@@ -298,7 +298,7 @@ def check_level_four(player, client_socket) :
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
         return False
-    elif player.starve < 15 :
+    elif player.starve < 25 :
         player.starve = None
         return False
     if (l < 1) :
@@ -350,7 +350,7 @@ def check_level_five(player, client_socket) :
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
         return False
-    elif player.starve < 20 :
+    elif player.starve < 25 :
         player.starve = None
         return False
     
@@ -404,7 +404,7 @@ def check_level_six(player, client_socket) :
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
         return False
-    elif player.starve < 25 :
+    elif player.starve < 30 :
         player.starve = None
         return False
     
@@ -464,7 +464,7 @@ def check_level_seven(player, client_socket) :
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
         return False
-    elif player.starve < 25 :
+    elif player.starve < 30 :
         player.starve = None
         return False
     
@@ -929,7 +929,7 @@ def command_send(client_socket, player):
             send_and_remove(client_socket, player, 0, "food")
         elif count_words_at_index(player.view, 0) > 0 :
             stone = check_stones(player, 0)
-            if stone != None and not 0 in find_keyword_in_list(player.view, "player player") :
+            if stone != None and player.view[0].count("player") < 2 :
                 send_and_remove(client_socket, player, 0, stone)
             else :
                 moving_player(client_socket, player)
@@ -962,7 +962,8 @@ def netcat_client(host, port, name):
                 print(f"Sending : {data_send}", end="")
                 client_socket.send(data_send.encode())
             elif data_rec.decode() == "This team is full, please wait\n" :
-                client_socket.recv(1024)
+                print(f"{data_rec.decode()}")
+                data_rec = client_socket.recv(1024)
                 break
             elif data_rec.decode() == "Wrong team name, please try again\n" :
                 print("Wrong team name. Closing...")
@@ -971,6 +972,7 @@ def netcat_client(host, port, name):
                 break
 
         d = 0
+        print(data_rec.decode, end="")
         while True:
 
             ready_to_read, _, _ = select.select(sockets_to_read, [], [], 0.1)
