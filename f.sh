@@ -1,12 +1,10 @@
 #!/bin/sh
 
 count=0
-max_processes=10
+max_processes=20
 pids=""
 
-# Fonction pour tuer tous les processus en arrière-plan
 cleanup() {
-    echo "Stopping all processes..."
     for pid in $pids; do
         kill $pid 2>/dev/null
     done
@@ -15,14 +13,16 @@ cleanup() {
     exit 0
 }
 
-# Configurer le gestionnaire de signal pour intercepter CTRL+C (SIGINT)
 trap cleanup INT
 
 while [ $count -lt $max_processes ]; do
-    ./zappy_ai -p 8080 -n f > f.txt &
-    pids="$pids $!"  # Collecter les PID des processus en arrière-plan
+    ./zappy_ai -p 12345 -n name1 > f$count.txt &
+    pids="$pids $!" 
     count=$((count + 1))
-    sleep 0.5  # Ajout d'une pause pour éviter de lancer trop d'instances en trop peu de temps
+    ./zappy_ai -p 12345 -n name2 > f$count.txt &
+    pids="$pids $!" 
+    count=$((count + 1))
+    sleep 0.4
 done
 
 wait

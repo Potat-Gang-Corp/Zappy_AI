@@ -63,6 +63,7 @@ class Player:
         self.should_stop = None
         self.follow = 0
         self.just_inc = False
+        self.plant = False
 
 def split_by_commas(input_string):
     """
@@ -354,6 +355,7 @@ def check_level_five(player, client_socket) :
         player.queue.append(data_send)
         return False
     elif player.starve < 25 :
+        player.just_inc = False
         player.starve = None
         return False
     
@@ -408,6 +410,7 @@ def check_level_six(player, client_socket) :
         player.queue.append(data_send)
         return False
     elif player.starve < 30 :
+        player.just_inc = False
         player.starve = None
         return False
     
@@ -469,6 +472,7 @@ def check_level_seven(player, client_socket) :
         return False
     elif player.starve < 30 :
         player.starve = None
+        player.just_inc = False
         return False
     
     while (l < 1) :
@@ -570,8 +574,9 @@ def can_evolve(client_socket, player):
             else :
                 return False
         elif player.level == 5 :
-            if player.view[0].count("player") >= 2:
+            if player.view[0].count("player") >= 2 and player.just_inc == False:
                 return False
+            # player.just_inc = False
             if player.wants_incanting == True :
                 return True
             if check_level_five(player, client_socket) :
@@ -581,8 +586,9 @@ def can_evolve(client_socket, player):
             else :
                 return False
         elif player.level == 6 :
-            if player.view[0].count("player") >= 2:
+            if player.view[0].count("player") >= 2 and player.just_inc == False:
                 return False
+            # player.just_inc = False
             if player.wants_incanting == True :
                 return True
             if check_level_six(player, client_socket) :
@@ -594,6 +600,7 @@ def can_evolve(client_socket, player):
         elif player.level == 7 :
             if player.view[0].count("player") >= 2 and player.just_inc == False:
                 return False
+            # player.just_inc = False
             if player.wants_incanting == True :
                 return True
             if check_level_seven(player, client_socket) :
@@ -658,7 +665,7 @@ def inventory(player, data_rec):
         if item.startswith("food"):
             _, quantity = item.split()
             player.starve = int(quantity)
-            print(f"I have {player.starve} food", file=sys.stderr)
+            print(f"I have {player.starve} food at level {player.level}.", file=sys.stderr)
             return
 
 def command_received(player, data_rec):
@@ -677,8 +684,6 @@ def command_received(player, data_rec):
     if "message" in data_rec.decode() :
         words = data_rec.decode().replace('"', '').replace(',', '').split()
         if len(words) > 4 and words[0] == "message" and words[2] == "Level" :
-            # if player.should_stop == 2 :
-            #     return 0
             player_num = words[1]
             player_level = words[3]
             if int(player_level) == int(player.level):
@@ -711,8 +716,11 @@ def command_received(player, data_rec):
             if player.queue[0] == "Incantation\n":
                 player.just_inc = True
                 player.queue.pop(0)
+        else :
+            player.just_inc = False
         print(f"Player got level : {player.level}", file=sys.stderr)
         player.should_stop = None
+        player.plant = True
         return 0
 
     if player.follow > 3 and player.should_stop == 1 and player.need_to_go == None :
@@ -747,6 +755,11 @@ def command_received(player, data_rec):
             player.need_to_go = None
         player.queue.pop(0)
     
+def plant_egg(client_socket, player):
+    data_send = "Fork\n"
+    print(f"Sending : {data_send}", end="")
+    client_socket.send(data_send.encode())
+    player.queue.append(data_send)
 
 def moving_level(client_socket, player):
     """
@@ -754,6 +767,29 @@ def moving_level(client_socket, player):
     @param client_socket Socket where to potentially send information.
     @param player Player class.
     """
+    if player.level == 8 :
+        if player.starve == None:
+            data_send = "Inventory\n"
+            print(f"Sending : {data_send}", end="")
+            client_socket.send(data_send.encode())
+            player.queue.append(data_send)
+            return
+        elif player.starve > 30 :
+            player.starve = None
+            r = random.random()
+            if r > 0.8 :
+                going_forward(client_socket, player)
+            elif r > 0.6 :
+                going_forward(client_socket, player)
+                turning_left(client_socket, player)
+                going_forward(client_socket, player)
+            elif r > 0.4 :
+                going_forward(client_socket, player)
+                turning_right(client_socket, player)
+                going_forward(client_socket, player)
+            else :
+                plant_egg(client_socket, player)
+            return
     indices = find_keyword_in_list(player.view, "food")
 
     if count_words_at_index(player.view, 2) > 0 and (check_stones(player, 2) != None or 2 in indices):
@@ -920,6 +956,10 @@ def command_send(client_socket, player):
     @param client_socket Socket where to potentially send information.
     @param player Player class.
     """
+    if player.plant == True :
+        plant_egg(client_socket, player)
+        player.plant = False
+
     if player.wants_incanting == True :
         if player.should_stop == 1 :
             player.wants_incanting = False
