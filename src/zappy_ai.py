@@ -185,18 +185,16 @@ def send_and_remove(client_socket, player, index, element):
 def going_forward(client_socket, player):
     """
     @brief Sends the command "Forward" to the socket, resets player's look and view, and adds the command to the player's queue.
-    @param client_socket Socket to which the command is sent.
-    @param player Player class instance containing view, look, and queue.
-
-    This function sends the "Forward" command to the specified client socket,
-    sets player.look to False, clears player.view, and appends the command 
+    
+    @param client_socket The socket to which the "Forward" command is sent.
+    @param player The Player class instance containing player's state, including view, look, and queue.
+    
+    This function sends the "Forward" command to the specified client socket and appends the command 
     to player.queue.
     """
     data_send = "Forward\n"
     print(f"Sending : {data_send}", end="")
     client_socket.send(data_send.encode())
-    player.look = False
-    player.view = []
     player.queue.append(data_send)
 
 def turning_right(client_socket, player):
@@ -942,37 +940,29 @@ def moving_level(client_socket, player):
     
     This function decides the next move for the player based on the player's level and the
     objects in their view. It includes checks to avoid clustering by making a random move
-    when there are too many players in the same position.
+    when there are too many players in the same position. It also handles special logic
+    for players at level 8 to either check their inventory or make strategic moves based
+    on their starvation level.
     
     @param client_socket The socket used to communicate with the server.
     @param player The player object containing the state and attributes of the player.
     """
+    indices = find_keyword_in_list(player.view, "food")
+
     if player.level == 8 :
         if player.starve == None:
             data_send = "Inventory\n"
             print(f"Sending : {data_send}", end="")
             client_socket.send(data_send.encode())
             player.queue.append(data_send)
-            return
         elif player.starve > 30 :
             player.starve = None
             r = random.random()
-            if r > 0.8 :
-                going_forward(client_socket, player)
-            elif r > 0.6 :
-                going_forward(client_socket, player)
-                turning_left(client_socket, player)
-                going_forward(client_socket, player)
-            elif r > 0.4 :
-                going_forward(client_socket, player)
-                turning_right(client_socket, player)
-                going_forward(client_socket, player)
+            if r > 0.4 :
+                make_random_move(client_socket, player)
             else :
                 plant_egg(client_socket, player)
-            return
-    indices = find_keyword_in_list(player.view, "food")
-
-    if player.view[0].count("player") > 1 :
+    elif player.view[0].count("player") > 1 :
         make_random_move(client_socket, player)
     elif count_words_at_index(player.view, 2) > 0 and (check_stones(player, 2) != None or 2 in indices):
         going_forward(client_socket, player)
@@ -1054,17 +1044,9 @@ def moving_level(client_socket, player):
         going_forward(client_socket, player)
         going_forward(client_socket, player)
     else :
-        r = random.random()
-        if r > 0.4 :
-            going_forward(client_socket, player)
-        elif r > 0.2 :
-            going_forward(client_socket, player)
-            turning_left(client_socket, player)
-            going_forward(client_socket, player)
-        else :
-            going_forward(client_socket, player)
-            turning_right(client_socket, player)
-            going_forward(client_socket, player)
+        make_random_move(client_socket, player)
+    player.look = False
+    player.view = []
 
 def go_to_need(client_socket, player):
     """
