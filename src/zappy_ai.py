@@ -60,6 +60,9 @@ class Player:
         self.max_thystame = 1
         self.food = 10 #
         self.starve = None #
+        self.should_stop = None
+        self.follow = 0
+        self.just_inc = False
 
 def split_by_commas(input_string):
     """
@@ -518,7 +521,7 @@ def can_evolve(client_socket, player):
     @param player Player class containing queue and incanting.
     @return True if the player can evolve, else false.
     """
-    if player.incanting == True or player.need_to_go != None:
+    if player.incanting == True or player.need_to_go != None or player.should_stop == 1 :
         return False
     if player.view != [] :
         if player.level == 1:
@@ -589,7 +592,7 @@ def can_evolve(client_socket, player):
             else :
                 return False
         elif player.level == 7 :
-            if player.view[0].count("player") >= 2:
+            if player.view[0].count("player") >= 2 and player.just_inc == False:
                 return False
             if player.wants_incanting == True :
                 return True
@@ -673,7 +676,9 @@ def command_received(player, data_rec):
 
     if "message" in data_rec.decode() :
         words = data_rec.decode().replace('"', '').replace(',', '').split()
-        if len(words) > 3 and words[0] == "message" and words[2] == "Level" :
+        if len(words) > 4 and words[0] == "message" and words[2] == "Level" :
+            # if player.should_stop == 2 :
+            #     return 0
             player_num = words[1]
             player_level = words[3]
             if int(player_level) == int(player.level):
@@ -682,8 +687,12 @@ def command_received(player, data_rec):
                     if incant_nb(player) and (player.need_to_go != 0 and player.wants_incanting == False) :
                         player.need_to_go = None 
                         player.nb_r = 0
+                        player.should_stop = None
                         return 0
                 elif words[4] == "r" :
+                    player.follow = 0
+                    if player.should_stop == None and player.wants_incanting == False :
+                        player.should_stop = 1
                     player.need_to_go = int(player_num)
                 if player.nb_r == 0 :
                     player.nb_r = 1
@@ -700,14 +709,25 @@ def command_received(player, data_rec):
         reduce_max(player)
         if len(player.queue) > 0 :
             if player.queue[0] == "Incantation\n":
+                player.just_inc = True
                 player.queue.pop(0)
         print(f"Player got level : {player.level}", file=sys.stderr)
+        player.should_stop = None
         return 0
 
+    if player.follow > 3 and player.should_stop == 1 and player.need_to_go == None :
+        player.nb_r = 0
+        player.wants_incanting = False
+        player.incanting = False
+        player.should_stop = None
+
     if len(player.queue) > 0 :
+        player.follow += 1
         if "Inventory" in player.queue[0] :
             inventory(player, data_rec.decode())
         if "Broadcast" in player.queue[0] :
+            if player.should_stop == None :
+                player.should_stop = 2
             player.queue.pop(0)
             return 0
         if "Take" in player.queue[0]:
@@ -836,6 +856,7 @@ def go_to_need(client_socket, player):
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
         player.wants_incanting = True
+        player.should_stop = None
     elif player.need_to_go == 1 :
         going_forward(client_socket, player)
     elif player.need_to_go == 2 :
@@ -875,10 +896,10 @@ def moving_player(client_socket, player):
     @param player Player class.
     """
     if player.need_to_go != None :
-        if incant_nb(player) :
-            player.incanting = True
-            player.nb_r = 0
-            player.need_to_go = None
+        if incant_nb(player) and player.need_to_go == 0 :
+            # player.incanting = True
+            # player.nb_r = 0
+            player.need_to_go = 0
             return
         go_to_need(client_socket, player)
         return
@@ -900,6 +921,10 @@ def command_send(client_socket, player):
     @param player Player class.
     """
     if player.wants_incanting == True :
+        if player.should_stop == 1 :
+            player.wants_incanting = False
+
+            return
         if len(player.queue) >= 1 :
             return
         else :
