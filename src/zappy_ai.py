@@ -592,11 +592,11 @@ def check_level_seven(player, client_socket) :
     s = player.view[0].count("sibur")
     if (s + player.sibur) < 2 :
         return False
-    m = player.view[0].count("mendiane")
-    if (m + player.mendiane) < 2 :
-        return False
     p = player.view[0].count("phiras")
     if (p + player.phiras) < 2:
+        return False
+    m = player.view[0].count("mendiane")
+    if (m + player.mendiane) < 2 :
         return False
     t = player.view[0].count("thystame")
     if (t + player.thystame) < 1:

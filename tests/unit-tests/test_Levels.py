@@ -394,15 +394,15 @@ class TestCheckLevelFive(unittest.TestCase):
         self.client_socket = Mock()
         # Setup mock Player instance
         self.player = Player()
-        self.player.view = ["linemate", "deraumere", "sibur", "phiras", "mendiane"]  # Example setup, adjust as per your Player class
+        self.player.view = ["", "deraumere", "sibur", "phiras", "mendiane"]  # Example setup, adjust as per your Player class
 
     def test_can_evolve_to_level_five(self):
         # Test case where player can evolve to level five
-        self.player.linemate = 1
-        self.player.deraumere = 1
-        self.player.sibur = 2
-        self.player.phiras = 1
-        self.player.mendiane = 3
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.mendiane = 5
+        self.player.starve = 50
         result = check_level_five(self.player, self.client_socket)
         self.assertTrue(result)
         self.assertTrue(self.player.wants_incanting)
@@ -411,10 +411,43 @@ class TestCheckLevelFive(unittest.TestCase):
     def test_cannot_evolve_to_level_five_insufficient_resources(self):
         # Test case where player cannot evolve due to insufficient resources
         self.player.linemate = 0
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.mendiane = 5
+        self.player.starve = 50
+        result = check_level_five(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_cannot_evolve_to_level_five_insufficient_resources_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
         self.player.deraumere = 0
-        self.player.sibur = 1
-        self.player.phiras = 1
-        self.player.mendiane = 2
+        self.player.sibur = 5
+        self.player.mendiane = 5
+        self.player.starve = 50
+        result = check_level_five(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+    
+    def test_cannot_evolve_to_level_five_insufficient_resources_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 0
+        self.player.mendiane = 5
+        self.player.starve = 50
+        result = check_level_five(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_cannot_evolve_to_level_five_insufficient_resources_bis_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.mendiane = 0
+        self.player.starve = 50
         result = check_level_five(self.player, self.client_socket)
         self.assertFalse(result)
         self.assertFalse(self.player.wants_incanting)
@@ -425,6 +458,45 @@ class TestCheckLevelFive(unittest.TestCase):
         result = check_level_five(self.player, self.client_socket)
         self.assertFalse(result)
         self.assertFalse(self.player.wants_incanting)
+
+    def test_insufficient_food(self):
+        # Test case where player does not have enough food to evolve
+        self.player.view = ["linemate", "deraumere", "sibur"]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.mendiane = 5
+        self.player.starve = 15
+        result = check_level_five(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.just_inc)
+        self.assertFalse(self.player.starve)
+
+    def test_send_inventory_request(self):
+        # Test case where the player's starve is None and an inventory request is sent
+        self.player.view = ["linemate", "deraumere", "sibur"]
+        self.player.linemate = 5
+        self.player.sibur = 5
+        self.player.deraumere = 5
+        self.player.mendiane = 5
+        self.player.starve = None
+        result = check_level_five(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertIn("Inventory\n", self.player.queue)
+    
+    def test_linemate_already_set(self):
+        self.player.view = ["", "", ""]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.mendiane = 5
+        self.player.starve = 50
+        result = check_level_four(self.player, self.client_socket)
+        self.assertTrue(result)
+        self.assertTrue(self.player.just_inc)
+        self.assertIn("Set linemate\n", self.player.queue)  # linemate should not be set again
+        self.assertIn("Set deraumere\n", self.player.queue)
+        self.assertIn("Set sibur\n", self.player.queue)
 
 class TestCheckLevelSix(unittest.TestCase):
 
@@ -437,10 +509,11 @@ class TestCheckLevelSix(unittest.TestCase):
 
     def test_can_evolve_to_level_six(self):
         # Test case where player can evolve to level six
-        self.player.linemate = 1
-        self.player.deraumere = 2
-        self.player.sibur = 1
-        self.player.mendiane = 3
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.starve = 50
         result = check_level_six(self.player, self.client_socket)
         self.assertTrue(result)
         self.assertTrue(self.player.wants_incanting)
@@ -448,10 +521,44 @@ class TestCheckLevelSix(unittest.TestCase):
 
     def test_cannot_evolve_to_level_six_insufficient_resources(self):
         # Test case where player cannot evolve due to insufficient resources
+        self.player.view = ["", ""]
         self.player.linemate = 0
-        self.player.deraumere = 1
-        self.player.sibur = 1
-        self.player.mendiane = 2
+        self.player.deraumere = 0
+        self.player.sibur = 0
+        self.player.phiras = 0
+        result = check_level_six(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+    
+    def test_cannot_evolve_to_level_six_insufficient_resources_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.view = ["", ""]
+        self.player.linemate = 5
+        self.player.deraumere = 0
+        self.player.sibur = 0
+        self.player.phiras = 0
+        result = check_level_six(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_cannot_evolve_to_level_six_insufficient_resources_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.view = ["", ""]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 0
+        self.player.phiras = 0
+        result = check_level_six(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+    
+    def test_cannot_evolve_to_level_six_insufficient_resources_bis_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.view = ["", ""]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 0
         result = check_level_six(self.player, self.client_socket)
         self.assertFalse(result)
         self.assertFalse(self.player.wants_incanting)
@@ -463,6 +570,45 @@ class TestCheckLevelSix(unittest.TestCase):
         self.assertFalse(result)
         self.assertFalse(self.player.wants_incanting)
 
+    def test_insufficient_food(self):
+        # Test case where player does not have enough food to evolve
+        self.player.view = ["linemate", "deraumere", "sibur"]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.phiras = 5
+        self.player.sibur = 5
+        self.player.starve = 15
+        result = check_level_six(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.just_inc)
+        self.assertFalse(self.player.starve)
+
+    def test_send_inventory_request(self):
+        # Test case where the player's starve is None and an inventory request is sent
+        self.player.view = ["linemate", "deraumere", "sibur"]
+        self.player.linemate = 5
+        self.player.sibur = 5
+        self.player.deraumere = 5
+        self.player.phiras = 5
+        self.player.starve = None
+        result = check_level_six(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertIn("Inventory\n", self.player.queue)
+
+    def test_linemate_already_set(self):
+        self.player.view = ["", "", ""]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.starve = 50
+        result = check_level_six(self.player, self.client_socket)
+        self.assertTrue(result)
+        self.assertTrue(self.player.just_inc)
+        self.assertIn("Set linemate\n", self.player.queue)  # linemate should not be set again
+        self.assertIn("Set deraumere\n", self.player.queue)
+        self.assertIn("Set sibur\n", self.player.queue)
+
 class TestCheckLevelSeven(unittest.TestCase):
 
     def setUp(self):
@@ -470,16 +616,17 @@ class TestCheckLevelSeven(unittest.TestCase):
         self.client_socket = Mock()
         # Setup mock Player instance
         self.player = Player()
-        self.player.view = ["linemate", "deraumere", "sibur", "mendiane", "phiras", "thystame"]  # Example setup, adjust as per your Player class
+        self.player.view = ["", "deraumere", "sibur", "mendiane", "phiras", "thystame"]  # Example setup, adjust as per your Player class
 
     def test_can_evolve_to_level_seven(self):
         # Test case where player can evolve to level seven
-        self.player.linemate = 1
-        self.player.deraumere = 2
-        self.player.sibur = 3
-        self.player.mendiane = 2
-        self.player.phiras = 1
-        self.player.thystame = 1
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.mendiane = 5
+        self.player.thystame = 5
+        self.player.starve = 50
         result = check_level_seven(self.player, self.client_socket)
         self.assertTrue(result)
         self.assertTrue(self.player.wants_incanting)  # Check player state
@@ -488,14 +635,80 @@ class TestCheckLevelSeven(unittest.TestCase):
     def test_cannot_evolve_to_level_seven_insufficient_resources(self):
         # Test case where player cannot evolve due to insufficient resources
         self.player.linemate = 0
-        self.player.deraumere = 1
-        self.player.sibur = 3
-        self.player.mendiane = 2
-        self.player.phiras = 1
-        self.player.thystame = 1
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.mendiane = 5
+        self.player.thystame = 5
+        self.player.starve = 50
         result = check_level_seven(self.player, self.client_socket)
         self.assertFalse(result)
         self.assertFalse(self.player.wants_incanting)  # Check player state
+
+    def test_cannot_evolve_to_level_seven_insufficient_resources_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 0
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.mendiane = 5
+        self.player.thystame = 5
+        self.player.starve = 50
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_cannot_evolve_to_level_seven_insufficient_resources_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 0
+        self.player.phiras = 5
+        self.player.mendiane = 5
+        self.player.thystame = 5
+        self.player.starve = 50
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_cannot_evolve_to_level_seven_insufficient_resources_bis_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 0
+        self.player.mendiane = 5
+        self.player.thystame = 5
+        self.player.starve = 50
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_cannot_evolve_to_level_seven_insufficient_resources_bis_bis_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.mendiane = 0
+        self.player.thystame = 5
+        self.player.starve = 50
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_cannot_evolve_to_level_seven_insufficient_resources_bis_bis_bis_bis_bis(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.mendiane = 5
+        self.player.thystame = 0
+        self.player.starve = 50
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
 
     def test_cannot_evolve_to_level_seven_no_view(self):
         # Test case where player has no view (should not attempt to evolve)
@@ -503,6 +716,47 @@ class TestCheckLevelSeven(unittest.TestCase):
         result = check_level_seven(self.player, self.client_socket)
         self.assertFalse(result)
         self.assertFalse(self.player.wants_incanting)
+
+    def test_insufficient_food(self):
+        # Test case where player cannot evolve due to insufficient resources
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.mendiane = 5
+        self.player.thystame = 5
+        self.player.starve = 1
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertFalse(self.player.wants_incanting)
+
+    def test_send_inventory_request(self):
+        # Test case where the player's starve is None and an inventory request is sent
+        self.player.view = ["linemate", "deraumere", "sibur"]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.mendiane = 5
+        self.player.thystame = 5
+        self.player.starve = None
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertFalse(result)
+        self.assertIn("Inventory\n", self.player.queue)
+
+    def test_linemate_already_set(self):
+        self.player.view = ["", "", ""]
+        self.player.linemate = 5
+        self.player.deraumere = 5
+        self.player.sibur = 5
+        self.player.phiras = 5
+        self.player.starve = 50
+        result = check_level_seven(self.player, self.client_socket)
+        self.assertTrue(result)
+        self.assertTrue(self.player.just_inc)
+        self.assertIn("Set linemate\n", self.player.queue)  # linemate should not be set again
+        self.assertIn("Set deraumere\n", self.player.queue)
+        self.assertIn("Set sibur\n", self.player.queue)
 
 class TestCanEvolve(unittest.TestCase):
 
