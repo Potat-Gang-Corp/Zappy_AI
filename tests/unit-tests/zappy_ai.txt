@@ -1,0 +1,368 @@
+#!/usr/bin/env python3
+
+
+
+import unittest
+from unittest.mock import Mock, patch
+import sys
+import os
+
+script_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, script_dir)
+
+from zappy_ai import (
+    split_by_commas,
+    find_keyword_in_list,
+    count_words_at_index,
+    remove_element,
+    send_and_remove,
+    going_forward,
+    turning_right,
+    turning_left,
+    looking,
+    check_stones,
+    can_evolve,
+    received_look,
+    command_received,
+    moving_level,
+    moving_player,
+    command_send,
+    Player
+)
+
+class MockClientSocket(Mock):
+    def send(self, data):
+        pass
+
+class MockPlayer:
+    def __init__(self):
+        self.view = []
+        self.queue = []
+
+class TestZappyAI(unittest.TestCase):
+
+    # Tests for split_by_commas
+    def test_basic_split(self):
+        self.assertEqual(split_by_commas('[a, b, c]'), ['a', 'b', 'c'])
+
+    def test_split_with_extra_spaces(self):
+        self.assertEqual(split_by_commas('[  a  , b , c  ]'), ['a', 'b', 'c'])
+
+    def test_empty_brackets(self):
+        self.assertEqual(split_by_commas('[]'), [])
+
+    def test_no_spaces(self):
+        self.assertEqual(split_by_commas('[a,b,c]'), ['a', 'b', 'c'])
+
+    def test_internal_spaces(self):
+        self.assertEqual(split_by_commas('[a, b c, d e f]'), ['a', 'b c', 'd e f'])
+
+    def test_empty_elements(self):
+        self.assertEqual(split_by_commas('[a, , b, , c]'), ['a', '', 'b', '', 'c'])
+
+    # Tests for find_keyword_in_list
+    def test_keyword_multiple_occurrences(self):
+        strings = ["apple", "banana", "cherry", "date", "apple pie"]
+        self.assertEqual(find_keyword_in_list(strings, "apple"), [0, 4])
+
+    def test_keyword_not_present(self):
+        strings = ["apple", "banana", "cherry", "date", "apple pie"]
+        self.assertEqual(find_keyword_in_list(strings, "orange"), [])
+
+    def test_empty_list(self):
+        strings = []
+        self.assertEqual(find_keyword_in_list(strings, "apple"), [])
+
+    def test_keyword_as_substring(self):
+        strings = ["pineapple", "banana", "cherry", "apple pie"]
+        self.assertEqual(find_keyword_in_list(strings, "apple"), [0, 3])
+
+    def test_keyword_as_whole_word(self):
+        strings = ["apple", "banana", "cherry", "apple"]
+        self.assertEqual(find_keyword_in_list(strings, "apple"), [0, 3])
+
+    def test_keyword_at_various_positions(self):
+        strings = ["apple", "banana", "cherry", "apple", "date", "apple pie"]
+        self.assertEqual(find_keyword_in_list(strings, "apple"), [0, 3, 5])
+
+    # Tests for count_words_at_index
+    def test_valid_index_with_words(self):
+        strings = ["hello world", "foo bar", "baz qux"]
+        self.assertEqual(count_words_at_index(strings, 0), 2)
+        self.assertEqual(count_words_at_index(strings, 1), 2)
+        self.assertEqual(count_words_at_index(strings, 2), 2)
+
+    def test_valid_index_with_excluded_words(self):
+        strings = ["hello egg player", "egg foo player", "player bar egg"]
+        self.assertEqual(count_words_at_index(strings, 0), 1)
+        self.assertEqual(count_words_at_index(strings, 1), 1)
+        self.assertEqual(count_words_at_index(strings, 2), 1)
+
+    def test_index_out_of_range(self):
+        strings = ["hello world", "foo bar", "baz qux"]
+        self.assertEqual(count_words_at_index(strings, 3), 0)
+        self.assertEqual(count_words_at_index(strings, -1), 0)
+
+    def test_empty_list(self):
+        strings = []
+        self.assertEqual(count_words_at_index(strings, 0), 0)
+
+    def test_empty_string_at_index(self):
+        strings = ["hello world", "", "baz qux"]
+        self.assertEqual(count_words_at_index(strings, 1), 0)
+
+    def test_string_with_only_excluded_words(self):
+        strings = ["egg player", "egg", "player"]
+        self.assertEqual(count_words_at_index(strings, 0), 0)
+        self.assertEqual(count_words_at_index(strings, 1), 0)
+        self.assertEqual(count_words_at_index(strings, 2), 0)
+
+    # Tests for remove_element
+    def test_remove_existing_element(self):
+        strings = ["hello world", "foo bar", "baz qux"]
+        remove_element(strings, 0, "world")
+        self.assertEqual(strings, ["hello ", "foo bar", "baz qux"])
+
+    def test_remove_nonexistent_element(self):
+        strings = ["hello world", "foo bar", "baz qux"]
+        remove_element(strings, 1, "world")
+        self.assertEqual(strings, ["hello world", "foo bar", "baz qux"])
+
+    def test_remove_first_occurrence_only(self):
+        strings = ["hello world world", "foo bar", "baz qux"]
+        remove_element(strings, 0, "world")
+        self.assertEqual(strings, ["hello  world", "foo bar", "baz qux"])
+
+    def test_index_out_of_range(self):
+        strings = ["hello world", "foo bar", "baz qux"]
+        with self.assertLogs(level='INFO') as log:
+            remove_element(strings, 3, "world")
+            self.assertIn("Index out of range (remove_element).", log.output[0])
+
+    def test_empty_list(self):
+        strings = []
+        with self.assertLogs(level='INFO') as log:
+            remove_element(strings, 0, "world")
+            self.assertIn("Index out of range (remove_element).", log.output[0])
+
+    def test_remove_entire_string(self):
+        strings = ["hello world", "foo bar", "baz qux"]
+        remove_element(strings, 2, "baz qux")
+        self.assertEqual(strings, ["hello world", "foo bar", ""])
+
+    # Tests for send_and_remove
+    def setUp(self):
+        self.client_socket = MockClientSocket()
+        self.player = MockPlayer()
+
+    def test_send_and_remove(self):
+        self.player.view = ["food", "linemate"]
+        send_and_remove(self.client_socket, self.player, 0, "food")
+        self.assertEqual(self.player.view, ["", "linemate"])
+        self.assertEqual(self.player.queue, ["Take food\n"])
+
+    def test_socket_send_called(self):
+        with unittest.mock.patch.object(self.client_socket, 'send') as mock_send:
+            self.player.view = ["food", "linemate"]
+            send_and_remove(self.client_socket, self.player, 0, "food")
+            mock_send.assert_called_once_with(b"Take food\n")
+
+    def test_remove_element_called(self):
+        with unittest.mock.patch('zappy_ai.remove_element') as mock_remove_element:
+            self.player.view = ["food", "linemate"]
+            send_and_remove(self.client_socket, self.player, 0, "food")
+            mock_remove_element.assert_called_once_with(self.player.view, 0, "food")
+
+    def test_empty_view_after_remove(self):
+        self.player.view = ["food"]
+        send_and_remove(self.client_socket, self.player, 0, "food")
+        self.assertEqual(self.player.view, [""])
+        
+    def test_add_to_queue(self):
+        self.player.view = ["food", "linemate"]
+        send_and_remove(self.client_socket, self.player, 0, "food")
+        self.assertEqual(self.player.queue, ["Take food\n"])
+
+    # Tests for going_forward
+    def setUp(self):
+        self.client_socket = MockClientSocket()
+        self.player = MockPlayer()
+
+    def test_going_forward_socket_send(self):
+        going_forward(self.client_socket, self.player)
+        self.client_socket.send.assert_called_once_with(b"Forward\n")
+
+    def test_going_forward_add_to_queue(self):
+        going_forward(self.client_socket, self.player)
+        self.assertEqual(self.player.queue, ["Forward\n"])
+
+    # Tests for turning_right and turning_left
+    def setUp(self):
+        self.client_socket = MockClientSocket()
+        self.player = MockPlayer()
+
+    def test_turning_right_socket_send(self):
+        turning_right(self.client_socket, self.player)
+        self.client_socket.send.assert_called_once_with(b"Right\n")
+
+    def test_turning_right_add_to_queue(self):
+        turning_right(self.client_socket, self.player)
+        self.assertEqual(self.player.queue, ["Right\n"])
+
+    def test_turning_left_socket_send(self):
+        turning_left(self.client_socket, self.player)
+        self.client_socket.send.assert_called_once_with(b"Left\n")
+
+    def test_turning_left_add_to_queue(self):
+        turning_left(self.client_socket, self.player)
+        self.assertEqual(self.player.queue, ["Left\n"])
+
+    
+
+
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tests = [
+            'test_split_by_commas',
+            'test_find_keyword_in_list',
+            'test_count_words_at_index',
+            'test_remove_element',
+            'test_send_and_remove',
+            'test_going_forward',
+            'test_turning_right',
+            'test_turning_left',
+            'test_looking',
+            'test_check_stones',
+            'test_can_evolve',
+            'test_received_look',
+            'test_command_received',
+            'test_moving_level_one',
+            'test_moving_player',
+            'test_command_send',
+        ]
+        cls.success_count = 0
+        cls.failure_count = 0
+
+    def setUp(self):
+        self.player = Player()
+
+    def tearDown(self):
+        test_name = self._testMethodName
+        result = self.defaultTestResult()
+        self._feedErrorsToResult(result, self._outcome.errors)
+        if any(error for (test, error) in result.errors):
+            print(f"{test_name} ... FAILURE")
+            TestZappyAI.failure_count += 1
+        elif any(failure for (test, failure) in result.failures):
+            print(f"{test_name} ... FAILURE")
+            TestZappyAI.failure_count += 1
+        else:
+            print(f"{test_name} ... SUCCESS")
+            TestZappyAI.success_count += 1
+
+    @classmethod
+    def tearDownClass(cls):
+        print(f"\nTotal tests run: {len(cls.tests)}")
+        print(f"Tests succeeded: {cls.success_count}")
+        print(f"Tests failed: {cls.failure_count}")
+
+    def test_split_by_commas(self):
+        self.assertEqual(split_by_commas('[a, b, c]'), ['a', 'b', 'c'])
+
+    def test_find_keyword_in_list(self):
+        strings = ["apple", "banana", "cherry", "date", "apple pie"]
+        self.assertEqual(find_keyword_in_list(strings, "apple"), [0, 4])
+
+    def test_count_words_at_index(self):
+        strings = ["hello egg player", "hello world", "foo bar egg player"]
+        self.assertEqual(count_words_at_index(strings, 0), 1)
+        self.assertEqual(count_words_at_index(strings, 1), 2)
+        self.assertEqual(count_words_at_index(strings, 2), 2)
+
+    def test_remove_element(self):
+        strings = ["hello world", "foo bar"]
+        remove_element(strings, 0, "world")
+        self.assertEqual(strings, ["hello ", "foo bar"])
+
+    def test_send_and_remove(self):
+        client_socket = Mock()
+        self.player.view = ["food", "linemate"]
+        send_and_remove(client_socket, self.player, 0, "food")
+        client_socket.send.assert_called_with(b"Take food\n")
+        self.assertEqual(self.player.view, ["", "linemate"])
+
+    def test_going_forward(self):
+        client_socket = Mock()
+        going_forward(client_socket, self.player)
+        client_socket.send.assert_called_with(b"Forward\n")
+        self.assertFalse(self.player.look)
+        self.assertEqual(self.player.view, [])
+
+    def test_turning_right(self):
+        client_socket = Mock()
+        turning_right(client_socket, self.player)
+        client_socket.send.assert_called_with(b"Right\n")
+
+    def test_turning_left(self):
+        client_socket = Mock()
+        turning_left(client_socket, self.player)
+        client_socket.send.assert_called_with(b"Left\n")
+
+    def test_looking(self):
+        client_socket = Mock()
+        looking(client_socket, self.player)
+        client_socket.send.assert_called_with(b"Look\n")
+        self.assertTrue(self.player.look)
+
+    def test_check_stones(self):
+        self.player.view = ["linemate", "deraumere"]
+        self.assertEqual(check_stones(self.player, 0), "linemate")
+        self.player.linemate = 9
+        self.assertEqual(check_stones(self.player, 1), "deraumere")
+
+    @patch('zappy_ai.send_and_remove')
+    def test_can_evolve(self, mock_send_and_remove):
+        client_socket = Mock()
+        self.player.view = ["linemate"]
+        self.assertTrue(can_evolve(client_socket, self.player))
+        self.assertTrue(self.player.incanting)
+
+    def test_received_look(self):
+        data_rec = Mock()
+        data_rec.decode.return_value = "[linemate, deraumere]"
+        received_look(self.player, data_rec)
+        self.assertEqual(self.player.view, ["linemate", "deraumere"])
+
+    def test_command_received(self):
+        data_rec = Mock()
+        data_rec.decode.return_value = "Current level: 2\n"
+        self.player.queue.append("Incantation\n")
+        command_received(self.player, data_rec)
+        self.assertEqual(self.player.level, 2)
+
+    @patch('zappy_ai.going_forward')
+    @patch('zappy_ai.turning_left')
+    @patch('zappy_ai.turning_right')
+    def test_moving_level(self, mock_turning_right, mock_turning_left, mock_going_forward):
+        client_socket = Mock()
+        self.player.view = ["", "", "foo"]
+        moving_level(client_socket, self.player)
+        mock_going_forward.assert_called()
+
+    @patch('zappy_ai.moving_level_one')
+    def test_moving_player(self, mock_moving_level_one):
+        client_socket = Mock()
+        self.player.level = 1
+        moving_player(client_socket, self.player)
+        mock_moving_level_one.assert_called()
+
+    @patch('zappy_ai.looking')
+    def test_command_send(self, mock_looking):
+        client_socket = Mock()
+        self.player.look = False
+        command_send(client_socket, self.player)
+        mock_looking.assert_called()
+
+if __name__ == "__main__":
+    unittest.main()

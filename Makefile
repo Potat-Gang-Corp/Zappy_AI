@@ -17,9 +17,12 @@ all:
 	@echo -e "\033[1;32mZappy_ai built successfully!\033[0m"
 
 run-test:
-	PYTHONPATH=src python -m unittest tests/unit-tests/test_zappy_ai.py
+	# PYTHONPATH=src python -m unittest tests/unit-tests/test_zappy_ai.py
+	@PYTHONPATH=src coverage run -m unittest discover -s tests/unit-tests/
 	@rm -rf tests/unit-tests/__pycache__
 	@rm -rf src/__pycache__
+	@coverage report -m
+	@coverage html
 
 clean:
 	@echo -e "\033[1;33mDeleting zappy_ai...\033[0m"
@@ -28,6 +31,8 @@ clean:
 	@echo -e "\033[1;33mCleaning...\033[0m"
 	@rm -rf *.txt
 	@rm -rf vgcore.*
+	@rm -rf .coverage
+	@rm -rf tests/unit-tests/__pycache__
 	@sleep 0.1
 	@echo -e "\033[1;32mEverything is clean now!\033[0m"
 
