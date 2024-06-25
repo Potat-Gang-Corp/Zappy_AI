@@ -33,6 +33,7 @@ clean:
 	@rm -rf vgcore.*
 	@rm -rf .coverage
 	@rm -rf tests/unit-tests/__pycache__
+	@rm -rf src/__pycache__
 	@sleep 0.1
 	@echo -e "\033[1;32mEverything is clean now!\033[0m"
 

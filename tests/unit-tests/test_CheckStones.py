@@ -13,7 +13,17 @@ class MockPlayer:
         self.view = []
         self.linemate = 0
         self.max_linemate = 5
-        # Initialize other attributes as needed for the tests
+        self.deraumere = 0
+        self.max_deraumere = 5
+        self.sibur = 0
+        self.max_sibur = 5
+        self.mendiane = 0
+        self.max_mendiane = 5
+        self.phiras = 0
+        self.max_phiras = 5
+        self.thystame = 0
+        self.max_thystame = 5
+
 
 class TestCheckStones(unittest.TestCase):
 
@@ -33,7 +43,50 @@ class TestCheckStones(unittest.TestCase):
         self.player.linemate = 5
         self.assertIsNone(check_stones(self.player, 0))
 
-    # Add similar tests for other stone types (deraumere, sibur, mendiane, phiras, thystame)
+    def test_deraumere_needed(self):
+        self.player.view = ["deraumere"]
+        self.assertEqual(check_stones(self.player, 0), "deraumere")
+
+    def test_deraumere_not_needed(self):
+        self.player.view = ["deraumere"]
+        self.player.deraumere = 5
+        self.assertIsNone(check_stones(self.player, 0))
+
+    def test_sibur_needed(self):
+        self.player.view = ["sibur"]
+        self.assertEqual(check_stones(self.player, 0), "sibur")
+
+    def test_sibur_not_needed(self):
+        self.player.view = ["sibur"]
+        self.player.sibur = 5
+        self.assertIsNone(check_stones(self.player, 0))
+
+    def test_mendiane_needed(self):
+        self.player.view = ["mendiane"]
+        self.assertEqual(check_stones(self.player, 0), "mendiane")
+
+    def test_mendiane_not_needed(self):
+        self.player.view = ["mendiane"]
+        self.player.mendiane = 5
+        self.assertIsNone(check_stones(self.player, 0))
+
+    def test_phiras_needed(self):
+        self.player.view = ["phiras"]
+        self.assertEqual(check_stones(self.player, 0), "phiras")
+
+    def test_phiras_not_needed(self):
+        self.player.view = ["phiras"]
+        self.player.phiras = 5
+        self.assertIsNone(check_stones(self.player, 0))
+
+    def test_thystame_needed(self):
+        self.player.view = ["thystame"]
+        self.assertEqual(check_stones(self.player, 0), "thystame")
+
+    def test_thystame_not_needed(self):
+        self.player.view = ["thystame"]
+        self.player.thystame = 5
+        self.assertIsNone(check_stones(self.player, 0))
 
     def test_index_out_of_range(self):
         self.assertIsNone(check_stones(self.player, 1))
