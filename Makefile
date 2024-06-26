@@ -8,7 +8,7 @@
 MAKEFLAGS += -j
 
 all:
-	@sleep 0.2
+	@sleep 0.1
 	@cp src/zappy_ai.py .
 	@mv zappy_ai.py zappy_ai
 	@chmod 777 zappy_ai
@@ -34,7 +34,7 @@ clean:
 	@rm -rf .coverage
 	@rm -rf tests/unit-tests/__pycache__
 	@rm -rf src/__pycache__
-	@sleep 0.1
+	@rm -rf htmlcov
 	@echo -e "\033[1;32mEverything is clean now!\033[0m"
 
 fclean: clean
