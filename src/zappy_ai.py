@@ -92,8 +92,9 @@ class Player:
 ## Splits the string received into a list.
 ## @param input_string String to split.
 ## @return List of strings created from the input string.
+##
 ##        This function takes an input string, removes any square brackets,
-##        splits the string by commas, and returns a list of cleaned items.
+## splits the string by commas, and returns a list of cleaned items.
 def split_by_commas(input_string):
     input_string = input_string.replace('[', '').replace(']', '')
     items = input_string.split(',')
@@ -104,6 +105,7 @@ def split_by_commas(input_string):
 ## @param strings List of words.
 ## @param keyword Word to find in the list.
 ## @return A list of indexes where the keyword is found in the list.
+##
 ##       This function searches through a list of strings and returns a list
 ##       of all the indices where the keyword appears.
 def find_keyword_in_list(strings, keyword):
@@ -117,6 +119,7 @@ def find_keyword_in_list(strings, keyword):
 ## @param strings List of strings.
 ## @param index Index where to count the words in the list.
 ## @return Number of words in the list at the given index.
+##
 ##        This function counts the number of words at a specified index in a list of strings,
 ##        excluding the words "egg" and "player". If the index is out of range, it returns 0.
 def count_words_at_index(strings, index):
@@ -172,6 +175,7 @@ def going_forward(client_socket, player):
 ## Sends the command "Right" to the socket and adds the command to the player's queue.
 ## @param client_socket Socket to which the command is sent.
 ## @param player Player class instance containing queue.
+##
 ##       This function sends the "Right" command to the specified client socket and appends the command to player.queue.
 def turning_right(client_socket, player):
     data_send = "Right\n"
@@ -182,6 +186,7 @@ def turning_right(client_socket, player):
 ## Sends the command "Left" to the socket and adds the command to the player's queue.
 ## @param client_socket Socket to which the command is sent.
 ## @param player Player class instance containing queue.
+##
 ##        This function sends the "Left" command to the specified client socket and appends the command to player.queue.
 def turning_left(client_socket, player):
     data_send = "Left\n"
@@ -192,6 +197,7 @@ def turning_left(client_socket, player):
 ## @brief Sends the command "Look" to the socket, sets player.look to True, and adds the command to the player's queue.
 ## @param client_socket Socket to which the command is sent.
 ## @param player Player class instance containing queue and look.
+##
 ##       This function sends the "Look" command to the specified client socket, sets player.look to True, and appends the command to player.queue.
 def looking(client_socket, player):
     data_send = "Look\n"
@@ -204,6 +210,7 @@ def looking(client_socket, player):
 ## @param player Player class instance containing view and stone-related attributes.
 ## @param index Index in the player's view to check for needed stones.
 ## @return The name of the needed stone if found, otherwise None.
+##
 ##       This function checks the specified index in player.view for stones
 ##       that the player still needs. If a needed stone is found, its name 
 ##       is returned; otherwise, None is returned.
@@ -278,6 +285,7 @@ def check_level_two(player, client_socket) :
 ## @param player Player class instance containing view, linemate, deraumere, sibur, phiras, starve, and queue.
 ## @param client_socket Socket to which the commands are sent.
 ## @return True if the player can evolve to level four, otherwise False.
+##
 ##       This function checks if the player has the necessary items to evolve to level four.
 ##       If the required items are not in the player's view or inventory, it sends an 
 ##       inventory request. If the player has insufficient food, the evolution is halted.
@@ -329,6 +337,7 @@ def check_level_three(player, client_socket) :
 ## @param player Player class instance containing view, linemate, deraumere, sibur, phiras, starve, and queue.
 ## @param client_socket Socket to which the commands are sent.
 ## @return True if the player can evolve to level five, otherwise False.
+##
 ##       This function checks if the player has the necessary items to evolve to level five.
 ##       If the required items are not in the player's view or inventory, it sends an 
 ##       inventory request. If the player has insufficient food, the evolution is halted.
@@ -388,6 +397,7 @@ def check_level_four(player, client_socket) :
 ## @param player Player class instance containing view, linemate, deraumere, sibur, mendiane, starve, and queue.
 ## @param client_socket Socket to which the commands are sent.
 ## @return True if the player can evolve to level six, otherwise False.
+##
 ##       This function checks if the player has the necessary items to evolve to level six.
 ##       If the required items are not in the player's view or inventory, it sends an 
 ##       inventory request. If the player has insufficient food, the evolution is halted.
@@ -450,6 +460,7 @@ def check_level_five(player, client_socket) :
 ## @param player Player class instance containing view, linemate, deraumere, sibur, phiras, starve, and queue.
 ## @param client_socket Socket to which the commands are sent.
 ## @return True if the player can evolve to level seven, otherwise False.
+##
 ##       This function checks if the player has the necessary items to evolve to level seven.
 ##       If the required items are not in the player's view or inventory, it sends an 
 ##       inventory request. If the player has insufficient food, the evolution is halted.
@@ -469,7 +480,6 @@ def check_level_six(player, client_socket) :
     
     if player.starve == None:
         data_send = "Inventory\n"
-        # player.inventory_b = False
         # print(f"Sending : {data_send}", end="")
         client_socket.send(data_send.encode())
         player.queue.append(data_send)
@@ -513,6 +523,7 @@ def check_level_six(player, client_socket) :
 ## @param player Player class instance containing view, linemate, deraumere, sibur, mendiane, phiras, thystame, starve, and queue.
 ## @param client_socket Socket to which the commands are sent.
 ## @return True if the player can evolve to level eight, otherwise False.
+##
 ##       This function checks if the player has the necessary items to evolve to level eight.
 ##       If the required items are not in the player's view or inventory, it sends an 
 ##       inventory request. If the player has insufficient food, the evolution is halted.
@@ -595,6 +606,7 @@ def check_level_seven(player, client_socket) :
 ## @param client_socket Socket where to send the string.
 ## @param player Player class containing queue and incanting.
 ## @return True if the player can evolve, else false.
+##
 ##       This function determines whether the player can evolve to the next level by checking 
 ##       the necessary conditions. If the conditions are met, it sends an incantation request 
 ##       and sets the player's incanting state to True.
@@ -712,6 +724,7 @@ def can_evolve(client_socket, player):
 ## @brief Based on the data received after using the looking function.
 ## @param player Player class containing look and view.
 ## @param data_rec String containing 'ko' or a long string.
+##
 ##       Sets player.look to False if data is 'ko', otherwise updates player.view with the result of split_by_commas.
 def received_look(player, data_rec):
     if data_rec.decode() == "ko\n" :
@@ -871,13 +884,12 @@ def plant_egg(client_socket, player):
     player.queue.append(data_send)
 
 ## @brief Make a random move to avoid clustering of players.
-## 
+## @param client_socket The socket used to communicate with the server.
+## @param player The player object containing the state and attributes of the player.
+##
 ##       This function selects a random move from a predefined set of movements, including
 ##       the possibility of not moving at all. It executes two random moves consecutively 
 ##       to maximize the randomness and avoid clustering of players in the same spot.
-## 
-## @param client_socket The socket used to communicate with the server.
-## @param player The player object containing the state and attributes of the player.
 def make_random_move(client_socket, player):
     moves = [
         going_forward,
@@ -896,15 +908,14 @@ def make_random_move(client_socket, player):
             move(client_socket, player)
 
 ## @brief Checks with the information in player.view where to move.
+## @param client_socket The socket used to communicate with the server.
+## @param player The player object containing the state and attributes of the player.
 ## 
 ##       This function decides the next move for the player based on the player's level and the
 ##       objects in their view. It includes checks to avoid clustering by making a random move
 ##       when there are too many players in the same position. It also handles special logic
 ##       for players at level 8 to either check their inventory or make strategic moves based
 ##       on their starvation level.
-## 
-## @param client_socket The socket used to communicate with the server.
-## @param player The player object containing the state and attributes of the player.
 def moving_level(client_socket, player):
     indices = find_keyword_in_list(player.view, "food")
 
