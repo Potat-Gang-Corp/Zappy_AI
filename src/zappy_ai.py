@@ -13,95 +13,110 @@ import random
 import time
 
 class Player:
-    """
-    @class Player
-    @brief Class containing every player related information.
+    """! Player class containing every player related information.
     """
 
     def __init__(self):
-        """
-        @brief Class constructor of Player.
+        """! Class constructor of Player.
 
         Initializes a new player with default values for all attributes.
         """
 
+        ## The level of the player.
+        ## Go from 1 to 8.
         self.level = 1
-        """@brief Level of the player."""
 
+        ## To know if the player is currently incanting.
+        ## Can be True or False.
         self.incanting = False
-        """@brief To know if the player is currently incanting."""
 
+        ## Indicates if the player is ready to evolve.
+        ## Can be True or False.
         self.wants_incanting = False
-        """@brief Indicates if the player is ready to evolve."""
 
+        ## Indicates where the player needs to go.
+        ## Go from 0 to 9.
         self.need_to_go = None
-        """@brief Indicates where the player needs to go (0 to 9)."""
 
+        ## Number of players of the same level ready to evolve.
+        ## No maximum, but go back to 0 when the number of player ready to evolve reach the requisites.
         self.nb_r = 0
-        """@brief Number of players of the same level ready to evolve."""
 
+        ## Contains the information the player can see when they look.
+        ## Gets more information scaling with level.
         self.view = []
-        """@brief Contains the information the player can see when they look."""
 
+        ## Indicates if the player asked the server what they see.
+        ## True if he did else False
         self.look = False
-        """@brief Indicates if the player asked the server what they see."""
 
+        ## The queue of actions the player sent to the server.
+        ## You have to take care not to fill it more than 10 because it doesn't allow queue bigger than 10.
         self.queue = []
-        """@brief The queue of actions the player sent to the server."""
 
+        ## The number of linemates the player has.
         self.linemate = 0
-        """@brief The number of linemates the player has."""
 
+        ## The number of deraumere the player has.
         self.deraumere = 0
-        """@brief The number of deraumere the player has."""
 
+        ## The number of sibur the player has.
         self.sibur = 0
-        """@brief The number of sibur the player has."""
 
+        ## The number of mendiane the player has.
         self.mendiane = 0
-        """@brief The number of mendiane the player has."""
 
+        ## The number of phiras the player has.
         self.phiras = 0
-        """@brief The number of phiras the player has."""
 
+        ## The number of thystame the player has.
         self.thystame = 0
-        """@brief The number of thystame the player has."""
 
+        ## The number of linemate the player needs to level up to 8.
+        ## This maximum is modified when leveling up.
         self.max_linemate = 9
-        """@brief The number of linemate the player needs to level up to 8."""
 
+        ## The number of deraumer the player needs to level up to 8.
+        ## This maximum is modified when leveling up.
         self.max_deraumere = 8
-        """@brief The number of deraumere the player needs to level up to 8."""
 
+        ## The number of sibur the player needs to level up to 8.
+        ## This maximum is modified when leveling up.
         self.max_sibur = 10
-        """@brief The number of sibur the player needs to level up to 8."""
 
+        ## The number of mendiane the player needs to level up to 8.
+        ## This maximum is modified when leveling up.
         self.max_mendiane = 5
-        """@brief The number of mendiane the player needs to level up to 8."""
 
+        ## The number of phiras the player needs to level up to 8.
+        ## This maximum is modified when leveling up.
         self.max_phiras = 6
-        """@brief The number of phiras the player needs to level up to 8."""
 
+        ## The number of thystame the player needs to level up to 8.
+        ## This maximum is modified when leveling up.
         self.max_thystame = 1
-        """@brief The number of thystame the player needs to level up to 8."""
 
+        ## The remaining food of the player.
+        ## Set to a number after asking for Inventory to the server, reseted after used.
         self.starve = None
-        """@brief The remaining food of the player."""
 
+        ## Indicates if the player should stop broadcasting.
+        ## None if no indication, 1 if should stop, 2 if should continue.
         self.should_stop = None
-        """@brief Indicates if the player should stop broadcasting."""
 
+        ## The time since the person the player is following last gave news.
+        ## Increment each time you execute a command in the server.
         self.follow = 0
-        """@brief The time since the person the player is following last gave news."""
 
+        ## Indicates if the player was the originator of the incantation.
         self.just_inc = False
-        """@brief Indicates if the player was the originator of the incantation."""
 
+        ## Indicates if the player needs to plant an egg (perform a Fork on the server).
         self.plant = False
-        """@brief Indicates if the player needs to plant an egg (perform a Fork on the server)."""
 
+        ## Indicates if the player asked for an Inventory check at Level 8.
+        ## False if he asked, True if not.
         self.inventory_b = True
-        #changes
 
 
 def split_by_commas(input_string):
